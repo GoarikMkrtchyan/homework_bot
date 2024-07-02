@@ -6,9 +6,7 @@ import requests
 from dotenv import load_dotenv
 from telebot import TeleBot
 from telebot.apihelper import ApiException
-from telegram.error import TelegramError
 
-# G
 
 load_dotenv()
 
@@ -48,8 +46,6 @@ def send_message(bot, message):
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.debug(f'Бот отправил сообщение: "{message}"')
-    except TelegramError as error:
-        logging.error(f'Ошибка при отправке сообщения в Telegram: {error}')
     except ApiException as error:
         logging.error(f'Ошибка при отправке сообщения в Telegram: {error}')
 
@@ -116,11 +112,7 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
-            try:
-                send_message(bot, message)
-            except TelegramError as telegram_error:
-                logging.error(
-                    f'Ошибка при отправке сообщения: {telegram_error}')
+            send_message(bot, message)
         time.sleep(RETRY_PERIOD)
 
 
