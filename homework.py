@@ -8,6 +8,8 @@ from telebot import TeleBot
 from telebot.apihelper import ApiException
 from telegram.error import TelegramError
 
+# G
+
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
