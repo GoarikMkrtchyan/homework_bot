@@ -4,6 +4,7 @@ import time
 
 import requests
 from dotenv import load_dotenv
+from contextlib import suppress
 from telebot import TeleBot
 from telebot.apihelper import ApiException
 
@@ -48,6 +49,7 @@ def send_message(bot, message):
         logging.debug(f'Бот отправил сообщение: "{message}"')
     except ApiException as error:
         logging.error(f'Ошибка при отправке сообщения в Telegram: {error}')
+        raise
 
 
 def get_api_answer(timestamp):
@@ -56,12 +58,17 @@ def get_api_answer(timestamp):
         response = requests.get(
             ENDPOINT, headers=HEADERS, params={'from_date': timestamp}
         )
-        if response.status_code != 200:
+        if response.status_code != requests.codes.ok:
             logging.error(
                 f'API вернул неожиданный статус: {response.status_code}')
             raise requests.RequestException(
                 f'API вернул неожиданный статус: {response.status_code}')
-        return response.json()
+        try:
+            return response.json()
+        except ValueError as json_error:
+            logging.error(f'Ошибка декодирования JSON: {json_error}')
+            raise requests.RequestException(
+                f'Ошибка декодирования JSON: {json_error}')
     except requests.RequestException as error:
         logging.error(f'Сбой при запросе к эндпоинту: {error}')
         raise RuntimeError(f'Ошибка при запросе к API: {error}') from error
@@ -75,6 +82,8 @@ def check_response(response):
         raise KeyError('Отсутствуют ожидаемые ключи в ответе API')
     if not isinstance(response['homeworks'], list):
         raise TypeError('Поле homeworks не является списком')
+    if not isinstance(response['current_date'], (int, float)):
+        raise TypeError('Поле current_date не является числом')
     return response['homeworks']
 
 
@@ -108,11 +117,12 @@ def main():
                 send_message(bot, status_message)
             else:
                 logging.debug('Отсутствие в ответе новых статусов')
-            timestamp = response['current_date']
+            timestamp = response.get('current_date', timestamp)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
-            send_message(bot, message)
+            with suppress(Exception):
+                send_message(bot, message)
         time.sleep(RETRY_PERIOD)
 
 
