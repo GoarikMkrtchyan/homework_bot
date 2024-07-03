@@ -1,13 +1,12 @@
 import logging
 import os
 import time
+from contextlib import suppress
 
 import requests
 from dotenv import load_dotenv
-from contextlib import suppress
 from telebot import TeleBot
 from telebot.apihelper import ApiException
-
 
 load_dotenv()
 
