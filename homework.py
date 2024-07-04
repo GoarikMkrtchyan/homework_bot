@@ -62,15 +62,14 @@ def get_api_answer(timestamp):
                 f'API вернул неожиданный статус: {response.status_code}')
             raise requests.RequestException(
                 f'API вернул неожиданный статус: {response.status_code}')
-        try:
-            return response.json()
-        except ValueError as json_error:
-            logging.error(f'Ошибка декодирования JSON: {json_error}')
-            raise requests.RequestException(
-                f'Ошибка декодирования JSON: {json_error}')
+        return response.json()
     except requests.RequestException as error:
         logging.error(f'Сбой при запросе к эндпоинту: {error}')
         raise RuntimeError(f'Ошибка при запросе к API: {error}') from error
+    except ValueError as json_error:
+        logging.error(f'Ошибка декодирования JSON: {json_error}')
+        raise requests.RequestException(
+            f'Ошибка декодирования JSON: {json_error}')
 
 
 def check_response(response):
@@ -106,6 +105,7 @@ def main():
 
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
+    status_changed = False
 
     while True:
         try:
@@ -113,7 +113,9 @@ def main():
             homeworks = check_response(response)
             if homeworks:
                 status_message = parse_status(homeworks[0])
-                send_message(bot, status_message)
+                if not status_changed or homeworks[0]['status'] != 'reviewing':
+                    send_message(bot, status_message)
+                    status_changed = True
             else:
                 logging.debug('Отсутствие в ответе новых статусов')
             timestamp = response.get('current_date', timestamp)
