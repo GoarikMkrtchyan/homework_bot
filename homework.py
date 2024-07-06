@@ -105,19 +105,22 @@ def main():
 
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-    status_changed = False
+    last_statuses = {}
 
     while True:
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response)
             if homeworks:
-                status_message = parse_status(homeworks[0])
-                if not status_changed or homeworks[0]['status'] != 'reviewing':
-                    send_message(bot, status_message)
-                    status_changed = True
+                for homework in homeworks:
+                    id = homework['id']
+                    new = homework['status']
+                    if id not in last_statuses or last_statuses[id] != new:
+                        status_message = parse_status(homework)
+                        send_message(bot, status_message)
+                        last_statuses[id] = new
             else:
-                logging.debug('Отсутствие в ответе новых статусов')
+                logging.debug('Нет новых домашних работ')
             timestamp = response.get('current_date', timestamp)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
